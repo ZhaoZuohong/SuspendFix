@@ -1,6 +1,10 @@
 # SuspendFix
 
+### Problem
+
 After installing openSUSE on my MacBook Air (mid-2013), I found an issue about suspending: after a few times of closing and opening lids, the machine cannot go to sleep and wake up immediately after closing the lids.
+
+### Solution
 
 Running `cat /proc/acpi/wakeup` gets following results:
 
@@ -21,67 +25,93 @@ ADP1      S3    *disabled  platform:ACPI0003:00
 LID0      S3    *enabled   platform:PNP0C0D:00
 ```
 
-My solution is: disable all devices here except `LID0`. If you set the state of `LID0` to disabled, you will lose the functionality of waking up automatically after opening the lid, and have to press the power button to wake up the machine.
+These enabled devices causes the computer to wake up immediately after suspending.
 
-I wrote the bash script `wakeup.sh` to disable those enabled devices:
+To change the status of a device, for example, `XHC1`, run the following command:
 
 ```bash
-#!/bin/bash
-echo RP01 > /proc/acpi/wakeup
-echo RP02 > /proc/acpi/wakeup
-echo RP03 > /proc/acpi/wakeup
-echo RP05 > /proc/acpi/wakeup
-echo RP06 > /proc/acpi/wakeup
-echo XHC1 > /proc/acpi/wakeup
+echo XHC1 | sudo tee /proc/acpi/wakeup
 ```
 
-After running it, the output of `cat /proc/acpi/wakeup` will be:
+After that, the status of `XHC1` will change:
 
 ```bash
 Device  S-state   Status   Sysfs node
 P0P2      S3    *disabled
 EC        S3    *disabled  platform:PNP0C09:00
 HDEF      S3    *disabled  pci:0000:00:1b.0
-RP01      S3    *disabled  pci:0000:00:1c.0
-RP02      S3    *disabled  pci:0000:00:1c.1
-RP03      S3    *disabled  pci:0000:00:1c.2
+RP01      S3    *enabled   pci:0000:00:1c.0
+RP02      S3    *enabled   pci:0000:00:1c.1
+RP03      S3    *enabled   pci:0000:00:1c.2
 ARPT      S4    *disabled  pci:0000:03:00.0
-RP05      S3    *disabled  pci:0000:00:1c.4
-RP06      S3    *disabled  pci:0000:00:1c.5
+RP05      S3    *enabled   pci:0000:00:1c.4
+RP06      S3    *enabled   pci:0000:00:1c.5
 SPIT      S3    *disabled
 XHC1      S3    *disabled  pci:0000:00:14.0
 ADP1      S3    *disabled  platform:ACPI0003:00
 LID0      S3    *enabled   platform:PNP0C0D:00
 ```
 
-Run this script first and then try to suspend and wakeup. There will be no problems.
+Change the status of all devices except `LID0` to disabled, and try to suspend. The suspending function will work properly now.
 
-To run this script each time the machine starts, I wrote `wakeupfix.service` to run it at boot time:
+If you set the status of `LID0` to disabled, you will lose the function of waking up the computer by opening its lid. Instead, you have to press the power button. So I recommend to leave it enabled.
+
+### Automation Script
+
+I have written a script (`SuspendFix.sh`) to disable all devices except `LID0`:
+
+```bash
+#!/bin/bash
+echo RP01 | tee /proc/acpi/wakeup
+echo RP02 | tee /proc/acpi/wakeup
+echo RP03 | tee /proc/acpi/wakeup
+echo RP05 | tee /proc/acpi/wakeup
+echo RP06 | tee /proc/acpi/wakeup
+echo XHC1 | tee /proc/acpi/wakeup
+```
+
+Test it with root permission:
+
+```bash
+sudo ./SuspendFix.sh
+```
+
+And examine the effect with `cat /proc/acpi/wakeup`.
+
+Copy the script to `/usr/bin`:
+
+```bash
+sudo cp SuspendFix.sh /usr/bin/
+```
+
+### Autostart
+
+To run this script each time the machine starts automatically, I wrote a service (`SuspendFix.service`):
 
 ```bash
 [Unit]
-Description=wakeup-fix
+Description=SuspendFix
 
 [Service]
-ExecStart=/bin/bash -c '/home/zhao/Documents/Projects/SuspendFix/wakeup.sh'
+ExecStart=/bin/bash SuspendFix.sh
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Modify the path to the real location of the script.
+If you have not copied `Suspend.sh` to `/usr/bin`, you have to change the line `ExecStart` in `SuspendFix.service` and ensure that the location of the script is correct.
 
-Copy `wakeupfix.service` to `/etc/systemd/system/`:
+Copy `SuspendFix.service` to `/etc/systemd/system/`:
 
 ```bash
-sudo cp wakeupfix.service /etc/systemd/system/
+sudo cp SuspendFix.service /etc/systemd/system/
 ```
 
 Then enable it:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable wakeupfix.service
+sudo systemctl enable SuspendFix.service
 ```
 
-Restart the machine and run `cat /proc/acpi/wakeup` to see whether it works or not.
+Restart the machine and run `cat /proc/acpi/wakeup`. All devices except `LID0` will be set to disabled and suspending might works properly.

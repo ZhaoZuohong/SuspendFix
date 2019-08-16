@@ -2,7 +2,7 @@
 Description=wakeup-fix
  
 [Service]
-ExecStart=/bin/bash -c '/home/zhao/Documents/Projects/SuspendFix/wakeup.sh'
+ExecStart=/bin/bash SuspendFix.sh
  
 [Install]
 WantedBy=multi-user.target
