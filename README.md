@@ -54,9 +54,9 @@ ADP1      S3    *disabled  platform:ACPI0003:00
 LID0      S3    *enabled   platform:PNP0C0D:00
 ```
 
-Run this script first and then try to suspend and wakeup. There sould be no problems.
+Run this script first and then try to suspend and wakeup. There will be no problems.
 
-To run this script everytime the machine starts, I wrote `wakeupfix.service` to run it at boot time:
+To run this script each time the machine starts, I wrote `wakeupfix.service` to run it at boot time:
 
 ```bash
 [Unit]
@@ -71,10 +71,10 @@ WantedBy=multi-user.target
 
 Modify the path to the real location of the script.
 
-Link `wakeupfix.service` under `/etc/systemd/user/`:
+Copy `wakeupfix.service` to `/etc/systemd/system/`:
 
 ```bash
-sudo ln -s ABSOLUTE_PATH_TO_SERVICE/wakeupfix.service /etc/systemd/system/
+sudo cp wakeupfix.service /etc/systemd/system/
 ```
 
 Then enable it:
@@ -85,5 +85,3 @@ sudo systemctl enable wakeupfix.service
 ```
 
 Restart the machine and run `cat /proc/acpi/wakeup` to see whether it works or not.
-
-
