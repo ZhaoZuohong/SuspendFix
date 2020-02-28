@@ -1,6 +1,6 @@
 # SuspendFix
 
-This project aims to fix the suspending problem on MacBook Air (mid-2013). The solution is only tested under openSUSE Leap 15.1.
+This project aims to fix the suspending problem on MacBook Air (mid-2013). The solution is tested under openSUSE Leap 15.1 and Ubuntu 18.04 LTS (Bionic). On Ubuntu, you must have `tlp` installed.
 
 ### Installation
 
